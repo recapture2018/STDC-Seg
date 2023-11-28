@@ -36,7 +36,7 @@ class ConvBNReLU(nn.Module):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
 
 class BiSeNetOutput(nn.Module):
@@ -55,14 +55,14 @@ class BiSeNetOutput(nn.Module):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
     def get_params(self):
         wd_params, nowd_params = [], []
         for name, module in self.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 wd_params.append(module.weight)
-                if not module.bias is None:
+                if module.bias is not None:
                     nowd_params.append(module.bias)
             elif isinstance(module, BatchNorm2d):
                 nowd_params += list(module.parameters())
@@ -86,27 +86,24 @@ class AttentionRefinementModule(nn.Module):
         atten = self.conv_atten(atten)
         atten = self.bn_atten(atten)
         atten = self.sigmoid_atten(atten)
-        out = torch.mul(feat, atten)
-        return out
+        return torch.mul(feat, atten)
 
     def init_weight(self):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
 
 class ContextPath(nn.Module):
     def __init__(self, backbone='CatNetSmall', pretrain_model='', use_conv_last=False, *args, **kwargs):
         super(ContextPath, self).__init__()
-        
+
         self.backbone_name = backbone
         if backbone == 'STDCNet1446':
             self.backbone = STDCNet1446(pretrain_model=pretrain_model, use_conv_last=use_conv_last)
             self.arm16 = AttentionRefinementModule(512, 128)
             inplanes = 1024
-            if use_conv_last:
-                inplanes = 1024
             self.arm32 = AttentionRefinementModule(inplanes, 128)
             self.conv_head32 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
             self.conv_head16 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
@@ -116,8 +113,6 @@ class ContextPath(nn.Module):
             self.backbone = STDCNet813(pretrain_model=pretrain_model, use_conv_last=use_conv_last)
             self.arm16 = AttentionRefinementModule(512, 128)
             inplanes = 1024
-            if use_conv_last:
-                inplanes = 1024
             self.arm32 = AttentionRefinementModule(inplanes, 128)
             self.conv_head32 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
             self.conv_head16 = ConvBNReLU(128, 128, ks=3, stride=1, padding=1)
@@ -157,14 +152,14 @@ class ContextPath(nn.Module):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
     def get_params(self):
         wd_params, nowd_params = [], []
         for name, module in self.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 wd_params.append(module.weight)
-                if not module.bias is None:
+                if module.bias is not None:
                     nowd_params.append(module.bias)
             elif isinstance(module, BatchNorm2d):
                 nowd_params += list(module.parameters())
@@ -200,21 +195,20 @@ class FeatureFusionModule(nn.Module):
         atten = self.conv2(atten)
         atten = self.sigmoid(atten)
         feat_atten = torch.mul(feat, atten)
-        feat_out = feat_atten + feat
-        return feat_out
+        return feat_atten + feat
 
     def init_weight(self):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
     def get_params(self):
         wd_params, nowd_params = [], []
         for name, module in self.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 wd_params.append(module.weight)
-                if not module.bias is None:
+                if module.bias is not None:
                     nowd_params.append(module.bias)
             elif isinstance(module, BatchNorm2d):
                 nowd_params += list(module.parameters())
@@ -224,25 +218,17 @@ class FeatureFusionModule(nn.Module):
 class BiSeNet(nn.Module):
     def __init__(self, backbone, n_classes, pretrain_model='', use_boundary_2=False, use_boundary_4=False, use_boundary_8=False, use_boundary_16=False, use_conv_last=False, heat_map=False, *args, **kwargs):
         super(BiSeNet, self).__init__()
-        
+
         self.use_boundary_2 = use_boundary_2
         self.use_boundary_4 = use_boundary_4
         self.use_boundary_8 = use_boundary_8
         self.use_boundary_16 = use_boundary_16
         # self.heat_map = heat_map
         self.cp = ContextPath(backbone, pretrain_model, use_conv_last=use_conv_last)
-        
-        
-        
-        if backbone == 'STDCNet1446':
-            conv_out_inplanes = 128
-            sp2_inplanes = 32
-            sp4_inplanes = 64
-            sp8_inplanes = 256
-            sp16_inplanes = 512
-            inplane = sp8_inplanes + conv_out_inplanes
 
-        elif backbone == 'STDCNet813':
+
+
+        if backbone in ['STDCNet1446', 'STDCNet813']:
             conv_out_inplanes = 128
             sp2_inplanes = 32
             sp4_inplanes = 64
@@ -260,7 +246,7 @@ class BiSeNet(nn.Module):
         self.conv_out32 = BiSeNetOutput(conv_out_inplanes, 64, n_classes)
 
         self.conv_out_sp16 = BiSeNetOutput(sp16_inplanes, 64, 1)
-        
+
         self.conv_out_sp8 = BiSeNetOutput(sp8_inplanes, 64, 1)
         self.conv_out_sp4 = BiSeNetOutput(sp4_inplanes, 64, 1)
         self.conv_out_sp2 = BiSeNetOutput(sp2_inplanes, 64, 1)
@@ -268,13 +254,13 @@ class BiSeNet(nn.Module):
 
     def forward(self, x):
         H, W = x.size()[2:]
-        
+
         feat_res2, feat_res4, feat_res8, feat_res16, feat_cp8, feat_cp16 = self.cp(x)
 
         feat_out_sp2 = self.conv_out_sp2(feat_res2)
 
         feat_out_sp4 = self.conv_out_sp4(feat_res4)
-  
+
         feat_out_sp8 = self.conv_out_sp8(feat_res8)
 
         feat_out_sp16 = self.conv_out_sp16(feat_res16)
@@ -292,21 +278,21 @@ class BiSeNet(nn.Module):
 
         if self.use_boundary_2 and self.use_boundary_4 and self.use_boundary_8:
             return feat_out, feat_out16, feat_out32, feat_out_sp2, feat_out_sp4, feat_out_sp8
-        
+
         if (not self.use_boundary_2) and self.use_boundary_4 and self.use_boundary_8:
             return feat_out, feat_out16, feat_out32, feat_out_sp4, feat_out_sp8
 
-        if (not self.use_boundary_2) and (not self.use_boundary_4) and self.use_boundary_8:
-            return feat_out, feat_out16, feat_out32, feat_out_sp8
-        
-        if (not self.use_boundary_2) and (not self.use_boundary_4) and (not self.use_boundary_8):
+        if not self.use_boundary_2 and not self.use_boundary_4:
+            if self.use_boundary_8:
+                return feat_out, feat_out16, feat_out32, feat_out_sp8
+
             return feat_out, feat_out16, feat_out32
 
     def init_weight(self):
         for ly in self.children():
             if isinstance(ly, nn.Conv2d):
                 nn.init.kaiming_normal_(ly.weight, a=1)
-                if not ly.bias is None: nn.init.constant_(ly.bias, 0)
+                if ly.bias is not None: nn.init.constant_(ly.bias, 0)
 
     def get_params(self):
         wd_params, nowd_params, lr_mul_wd_params, lr_mul_nowd_params = [], [], [], []

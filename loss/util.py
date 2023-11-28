@@ -39,5 +39,4 @@ def enet_weighing(label, num_classes, c=1.02):
 def minmax_scale(input_arr):
     min_val = np.min(input_arr)
     max_val = np.max(input_arr)
-    output_arr = (input_arr - min_val) * 255.0 / (max_val - min_val)
-    return output_arr
+    return (input_arr - min_val) * 255.0 / (max_val - min_val)

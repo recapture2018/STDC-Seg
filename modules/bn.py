@@ -73,11 +73,8 @@ class ABN(nn.Module):
 
     def __repr__(self):
         rep = '{name}({num_features}, eps={eps}, momentum={momentum},' \
-              ' affine={affine}, activation={activation}'
-        if self.activation == "leaky_relu":
-            rep += ', slope={slope})'
-        else:
-            rep += ')'
+                  ' affine={affine}, activation={activation}'
+        rep += ', slope={slope})' if self.activation == "leaky_relu" else ')'
         return rep.format(name=self.__class__.__name__, **self.__dict__)
 
 
@@ -120,11 +117,8 @@ class InPlaceABNSync(ABN):
 
     def __repr__(self):
         rep = '{name}({num_features}, eps={eps}, momentum={momentum},' \
-              ' affine={affine}, activation={activation}'
-        if self.activation == "leaky_relu":
-            rep += ', slope={slope})'
-        else:
-            rep += ')'
+                  ' affine={affine}, activation={activation}'
+        rep += ', slope={slope})' if self.activation == "leaky_relu" else ')'
         return rep.format(name=self.__class__.__name__, **self.__dict__)
 
 

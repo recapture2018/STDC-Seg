@@ -84,7 +84,7 @@ def drop_path(x, drop_prob):
 def create_exp_dir(path, scripts_to_save=None):
     if not os.path.exists(path):
         os.mkdir(path)
-    print('Experiment dir : {}'.format(path))
+    print(f'Experiment dir : {path}')
 
     if scripts_to_save is not None:
         os.mkdir(os.path.join(path, 'scripts'))
@@ -158,8 +158,7 @@ def do_inference(context, h_input, d_input, h_output, d_output, iterations=None)
     for _ in tqdm(range(iterations)):
         context.execute(batch_size=MAX_BATCH_SIZE, bindings=[int(d_input), int(d_output)])
     elapsed_time = time.time() - t_start
-    latency = elapsed_time / iterations * 1000
-    return latency
+    return elapsed_time / iterations * 1000
 
 
 def compute_latency_ms_tensorrt(model, input_size, iterations=None):
@@ -275,28 +274,40 @@ def plot_path_width(lasts, paths=[], widths=[]):
     if len(path1) != 0 and path1[-1] != lasts[1]: path1.append(lasts[1])
     if len(path2) != 0 and path2[-1] != lasts[2]: path2.append(lasts[2])
     line_updown = -0.07
-    annotation_updown = 0.05; annotation_down_scale = 1.7
+    annotation_updown = 0.05
+    annotation_down_scale = 1.7
     x_len = max(len(path0), len(path1), len(path2))
     f, ax = plt.subplots(figsize=(x_len, 3))
-    
+
     assert len(path0) == len(width0) + 1 or len(path0) + len(width0) == 0, "path0 %d, width0 %d"%(len(path0), len(width0))
     assert len(path1) == len(width1) + 1 or len(path1) + len(width1) == 0, "path1 %d, width1 %d"%(len(path1), len(width1))
     assert len(path2) == len(width2) + 1 or len(path2) + len(width2) == 0, "path2 %d, width2 %d"%(len(path2), len(width2))
-    
+
     ax.plot(np.arange(len(path0)), 2 - np.array(path0), label='1/32', lw=2.5, color='#000000', linestyle='-')
     ax.plot(np.arange(len(path1)), 2 - np.array(path1) + line_updown, lw=1.8, label='1/16', color='#313131', linestyle='--')
     ax.plot(np.arange(len(path2)), 2 - np.array(path2) + line_updown*2, lw=1.2, label='1/8', color='#5a5858', linestyle='-.')
-    
-    annotations = {} # (idx, scale, width, down): ((x, y), width)
-    for idx, width in enumerate(width2):
-        annotations[(idx, path2[idx], width, path2[idx+1]-path2[idx])] = ((0.35 + idx, 2 - path2[idx] + line_updown*2 + annotation_updown - (path2[idx+1]-path2[idx])/annotation_down_scale), width)
+
+    annotations = {
+        (idx, path2[idx], width, path2[idx + 1] - path2[idx]): (
+            (
+                0.35 + idx,
+                2
+                - path2[idx]
+                + line_updown * 2
+                + annotation_updown
+                - (path2[idx + 1] - path2[idx]) / annotation_down_scale,
+            ),
+            width,
+        )
+        for idx, width in enumerate(width2)
+    }
     for idx, width in enumerate(width1):
         annotations[(idx, path1[idx], width, path1[idx+1]-path1[idx])] = ((0.35 + idx, 2 - path1[idx] + line_updown + annotation_updown - (path1[idx+1]-path1[idx])/annotation_down_scale), width)
     for idx, width in enumerate(width0):
         annotations[(idx, path0[idx], width, path0[idx+1]-path0[idx])] = ((0.35 + idx, 2 - path0[idx] + annotation_updown - (path0[idx+1]-path0[idx])/annotation_down_scale), width)
-    for k, v in annotations.items():
+    for v in annotations.values():
         plt.annotate("%.2f"%v[1], v[0], fontsize=12, color='red')
-    
+
     plt.xticks(np.arange(x_len), list(range(1, x_len+1)))
     plt.yticks(np.array([0, 1, 2]), ["1/32", "1/16", "1/8"])
     plt.ylim([-0.4, 2.5])
@@ -311,9 +322,10 @@ def plot_path_width(lasts, paths=[], widths=[]):
     return f
 
 def plot_op(ops, path, width=[], head_width=None, F_base=16):
-    assert len(width) == 0 or len(width) == len(ops) - 1
+    assert len(width) in [0, len(ops) - 1]
     table_vals = []
-    scales = {0: "1/8", 1: "1/16", 2: "1/32"}; base_scale = 3
+    scales = {0: "1/8", 1: "1/16", 2: "1/32"}
+    base_scale = 3
     for idx, op in enumerate(ops):
         scale = path[idx]
         if len(width) > 0:
@@ -346,8 +358,5 @@ def plot_op(ops, path, width=[], head_width=None, F_base=16):
     return fig
 
 def objective_acc_lat(acc, lat, lat_target=8.3, alpha=-0.07, beta=-0.07):
-    if lat <= lat_target:
-        w = alpha
-    else:
-        w = beta
+    w = alpha if lat <= lat_target else beta
     return acc * math.pow(lat / lat_target, w)

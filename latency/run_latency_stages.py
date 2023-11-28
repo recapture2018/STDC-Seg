@@ -32,7 +32,7 @@ def main():
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
-    
+
     # Configuration ##############
     use_boundary_2 = False
     use_boundary_4 = False
@@ -40,7 +40,7 @@ def main():
     use_boundary_16 = False
     use_conv_last = False
     n_classes = 19
-    
+
     # STDC1Seg-50 250.4FPS on NVIDIA GTX 1080Ti
     # backbone = 'STDCNet813'
     # methodName = 'STDC1-Seg'
@@ -68,23 +68,23 @@ def main():
     # inputSize = 768
     # inputScale = 75
     # inputDimension = (1, 3, 768, 1536)
-    
+
     model = BiSeNet(backbone=backbone, n_classes=n_classes, 
     use_boundary_2=use_boundary_2, use_boundary_4=use_boundary_4, 
     use_boundary_8=use_boundary_8, use_boundary_16=use_boundary_16, 
     input_size=inputSize, use_conv_last=use_conv_last)
-    
+
 
     print('loading parameters...')
-    respth = '../checkpoints/{}/'.format(methodName)
-    save_pth = os.path.join(respth, 'model_maxmIOU{}.pth'.format(inputScale))
+    respth = f'../checkpoints/{methodName}/'
+    save_pth = os.path.join(respth, f'model_maxmIOU{inputScale}.pth')
     model.load_state_dict(torch.load(save_pth))
     model = model.cuda()
     #####################################################
 
     latency = compute_latency(model, inputDimension)
-    print("{}{} FPS:".format(methodName, inputScale) + str(1000./latency))
-    logging.info("{}{} FPS:".format(methodName, inputScale) + str(1000./latency))
+    print(f"{methodName}{inputScale} FPS:{str(1000.0 / latency)}")
+    logging.info(f"{methodName}{inputScale} FPS:{str(1000.0 / latency)}")
 
     # calculate FLOPS and params
     '''

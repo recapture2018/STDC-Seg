@@ -15,7 +15,7 @@ class DenseModule(nn.Module):
 
         self.convs1 = nn.ModuleList()
         self.convs3 = nn.ModuleList()
-        for i in range(self.layers):
+        for _ in range(self.layers):
             self.convs1.append(nn.Sequential(OrderedDict([
                 ("bn", norm_act(in_channels)),
                 ("conv", nn.Conv2d(in_channels, self.growth * bottleneck_factor, 1, bias=False))

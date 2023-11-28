@@ -27,7 +27,7 @@ ACT_NONE = "none"
 def _check(fn, *args, **kwargs):
     success = fn(*args, **kwargs)
     if not success:
-        raise RuntimeError("CUDA Error encountered in {}".format(fn))
+        raise RuntimeError(f"CUDA Error encountered in {fn}")
 
 
 def _broadcast_shape(x):
@@ -43,9 +43,8 @@ def _broadcast_shape(x):
 def _reduce(x):
     if len(x.size()) == 2:
         return x.sum(dim=0)
-    else:
-        n, c = x.size()[0:2]
-        return x.contiguous().view((n, c, -1)).sum(2).sum(0)
+    n, c = x.size()[:2]
+    return x.contiguous().view((n, c, -1)).sum(2).sum(0)
 
 
 def _count_samples(x):
@@ -61,8 +60,6 @@ def _act_forward(ctx, x):
         _backend.leaky_relu_forward(x, ctx.slope)
     elif ctx.activation == ACT_ELU:
         _backend.elu_forward(x)
-    elif ctx.activation == ACT_NONE:
-        pass
 
 
 def _act_backward(ctx, x, dx):
@@ -70,8 +67,6 @@ def _act_backward(ctx, x, dx):
         _backend.leaky_relu_backward(x, dx, ctx.slope)
     elif ctx.activation == ACT_ELU:
         _backend.elu_backward(x, dx)
-    elif ctx.activation == ACT_NONE:
-        pass
 
 
 class InPlaceABN(autograd.Function):

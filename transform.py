@@ -40,12 +40,11 @@ class HorizontalFlip(object):
     def __call__(self, im_lb):
         if random.random() > self.p:
             return im_lb
-        else:
-            im = im_lb['im']
-            lb = im_lb['lb']
-            return dict(im = im.transpose(Image.FLIP_LEFT_RIGHT),
-                        lb = lb.transpose(Image.FLIP_LEFT_RIGHT),
-                    )
+        im = im_lb['im']
+        lb = im_lb['lb']
+        return dict(im = im.transpose(Image.FLIP_LEFT_RIGHT),
+                    lb = lb.transpose(Image.FLIP_LEFT_RIGHT),
+                )
 
 
 class RandomScale(object):
@@ -67,11 +66,11 @@ class RandomScale(object):
 
 class ColorJitter(object):
     def __init__(self, brightness=None, contrast=None, saturation=None, *args, **kwargs):
-        if not brightness is None and brightness>0:
+        if brightness is not None and brightness > 0:
             self.brightness = [max(1-brightness, 0), 1+brightness]
-        if not contrast is None and contrast>0:
+        if contrast is not None and contrast > 0:
             self.contrast = [max(1-contrast, 0), 1+contrast]
-        if not saturation is None and saturation>0:
+        if saturation is not None and saturation > 0:
             self.saturation = [max(1-saturation, 0), 1+saturation]
 
     def __call__(self, im_lb):

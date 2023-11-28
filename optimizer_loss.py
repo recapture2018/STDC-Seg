@@ -48,20 +48,15 @@ class Optimizer(object):
 
     def get_lr(self):
         if self.it <= self.warmup_steps:
-            lr = self.warmup_start_lr*(self.warmup_factor**self.it)
-        else:
-            factor = (1-(self.it-self.warmup_steps)/(self.max_iter-self.warmup_steps))**self.power
-            lr = self.lr0 * factor
-        return lr
+            return self.warmup_start_lr*(self.warmup_factor**self.it)
+        factor = (1-(self.it-self.warmup_steps)/(self.max_iter-self.warmup_steps))**self.power
+        return self.lr0 * factor
 
 
     def step(self):
         self.lr = self.get_lr()
         for pg in self.optim.param_groups:
-            if pg.get('lr_mul', False):
-                pg['lr'] = self.lr * 10
-            else:
-                pg['lr'] = self.lr
+            pg['lr'] = self.lr * 10 if pg.get('lr_mul', False) else self.lr
         if self.optim.defaults.get('lr_mul', False):
             self.optim.defaults['lr'] = self.lr * 10
         else:

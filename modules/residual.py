@@ -39,7 +39,7 @@ class IdentityResidualBlock(nn.Module):
         super(IdentityResidualBlock, self).__init__()
 
         # Check parameters for inconsistencies
-        if len(channels) != 2 and len(channels) != 3:
+        if len(channels) not in [2, 3]:
             raise ValueError("channels must contain either two or three values")
         if len(channels) == 2 and groups != 1:
             raise ValueError("groups > 1 are only valid if len(channels) == 3")
@@ -57,7 +57,7 @@ class IdentityResidualBlock(nn.Module):
                                     dilation=dilation))
             ]
             if dropout is not None:
-                layers = layers[0:2] + [("dropout", dropout())] + layers[2:]
+                layers = layers[:2] + [("dropout", dropout())] + layers[2:]
         else:
             layers = [
                 ("conv1", nn.Conv2d(in_channels, channels[0], 1, stride=stride, padding=0, bias=False)),
@@ -68,7 +68,7 @@ class IdentityResidualBlock(nn.Module):
                 ("conv3", nn.Conv2d(channels[1], channels[2], 1, stride=1, padding=0, bias=False))
             ]
             if dropout is not None:
-                layers = layers[0:4] + [("dropout", dropout())] + layers[4:]
+                layers = layers[:4] + [("dropout", dropout())] + layers[4:]
         self.convs = nn.Sequential(OrderedDict(layers))
 
         if need_proj_conv:
